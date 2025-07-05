@@ -6,6 +6,9 @@
     <title>E-Football Champions League</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&family=Orbitron:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
     <style>
         :root {
             --primary: #0a1128;
@@ -793,27 +796,6 @@
             background: var(--danger);
         }
 
-        .firebase-config {
-            background: rgba(10, 15, 30, 0.95);
-            border-radius: 15px;
-            padding: 1.5rem;
-            margin: 2rem 0;
-            border: 1px solid rgba(0, 194, 255, 0.3);
-        }
-
-        .firebase-config h3 {
-            color: var(--accent);
-            margin-bottom: 1rem;
-        }
-
-        .firebase-info {
-            background: rgba(0, 0, 0, 0.3);
-            padding: 1rem;
-            border-radius: 8px;
-            margin-bottom: 1rem;
-            font-size: 0.9rem;
-        }
-
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -1105,15 +1087,6 @@
                     <button class="btn btn-danger" id="logoutBtn">Logout</button>
                 </div>
                 
-                <!-- Firebase Configuration Status -->
-                <div class="firebase-config">
-                    <h3>Firebase Realtime Database</h3>
-                    <div class="firebase-info">
-                        <p><strong>Status:</strong> <span id="firebaseStatus">Connected</span></p>
-                        <p>All data is automatically synchronized with Firebase in real-time.</p>
-                    </div>
-                </div>
-                
                 <div class="admin-tabs">
                     <div class="admin-tab active" data-tab="teams">Teams</div>
                     <div class="admin-tab" data-tab="matches">Matches</div>
@@ -1353,10 +1326,6 @@
         </div>
     </footer>
     
-    <!-- Firebase SDK -->
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
-    
     <script>
         // Firebase configuration
         const firebaseConfig = {
@@ -1370,14 +1339,19 @@
         };
 
         // Initialize Firebase
-        const app = firebase.initializeApp(firebaseConfig);
-        const database = firebase.database();
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.firestore();
 
         // Data storage and initialization
-        const STORAGE_KEY = 'eFootballLeagueData';
         let tournamentData = {
             teams: [],
             matches: [],
+            groups: {
+                A: [],
+                B: [],
+                C: [],
+                D: []
+            },
             knockout: {
                 semifinal1: null,
                 semifinal2: null,
@@ -1386,113 +1360,70 @@
             champion: null
         };
 
-        // Initialize data from Firebase or localStorage
+        // Initialize data from Firestore
         function initData() {
-            // Try to load from Firebase first
-            loadFromFirebase().then(() => {
-                console.log("Data loaded from Firebase");
-                document.getElementById('firebaseStatus').textContent = "Connected";
-                renderAllData();
-            }).catch(error => {
-                console.log("Firebase load failed, trying localStorage", error);
-                document.getElementById('firebaseStatus').textContent = "Offline (using local data)";
-                // Load from localStorage as fallback
-                const savedData = localStorage.getItem(STORAGE_KEY);
-                if (savedData) {
-                    tournamentData = JSON.parse(savedData);
-                    renderAllData();
-                } else {
-                    // If no local data, load initial data
-                    loadInitialData();
-                }
-            });
-        }
-
-        // Load initial data for first-time users
-        function loadInitialData() {
-            tournamentData = {
-                teams: [
-                    { id: "1", name: "Real Madrid", group: "A" },
-                    { id: "2", name: "Bayern Munich", group: "A" },
-                    { id: "3", name: "Manchester City", group: "B" },
-                    { id: "4", name: "Liverpool", group: "B" },
-                    { id: "5", name: "Barcelona", group: "C" },
-                    { id: "6", name: "Juventus", group: "C" },
-                    { id: "7", name: "Paris Saint-Germain", group: "D" },
-                    { id: "8", name: "Chelsea", group: "D" }
-                ],
-                matches: [
-                    {
-                        id: "m1",
-                        stage: "group",
-                        group: "A",
-                        team1Id: "1",
-                        team2Id: "2",
-                        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-                        venue: "Santiago Bernabeu",
-                        score1: null,
-                        score2: null
-                    },
-                    {
-                        id: "m2",
-                        stage: "group",
-                        group: "B",
-                        team1Id: "3",
-                        team2Id: "4",
-                        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                        venue: "Etihad Stadium",
-                        score1: null,
-                        score2: null
-                    }
-                ],
-                knockout: {
-                    semifinal1: null,
-                    semifinal2: null,
-                    final: null
-                },
-                champion: null
-            };
-            saveData();
-        }
-
-        // Save data to Firebase and localStorage
-        function saveData() {
-            // Save to localStorage
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
-            
-            // Save to Firebase
-            saveToFirebase().then(() => {
-                console.log("Data saved to Firebase");
-            }).catch(error => {
-                console.error("Error saving to Firebase:", error);
-                showNotification('Failed to save data to cloud', true);
-            });
-            
-            renderAllData();
-        }
-
-        // Load data from Firebase
-        function loadFromFirebase() {
-            return new Promise((resolve, reject) => {
-                database.ref('tournamentData').once('value').then((snapshot) => {
-                    const data = snapshot.val();
-                    if (data) {
-                        tournamentData = data;
-                        // Also save to localStorage for offline use
-                        localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
-                        resolve();
-                    } else {
-                        reject("No data in Firebase");
-                    }
-                }).catch(error => {
-                    reject(error);
+            // Load teams
+            db.collection("teams").get().then((querySnapshot) => {
+                tournamentData.teams = [];
+                querySnapshot.forEach((doc) => {
+                    tournamentData.teams.push({ id: doc.id, ...doc.data() });
                 });
+                renderTeams();
+                renderAdminLists();
             });
+
+            // Load matches
+            db.collection("matches").get().then((querySnapshot) => {
+                tournamentData.matches = [];
+                querySnapshot.forEach((doc) => {
+                    tournamentData.matches.push({ id: doc.id, ...doc.data() });
+                });
+                renderMatches();
+                renderUpcomingMatches();
+                renderAllMatches();
+            });
+
+            // Load knockout data
+            db.collection("knockout").doc("data").get().then((doc) => {
+                if (doc.exists) {
+                    tournamentData.knockout = doc.data();
+                }
+                renderKnockoutStage();
+            });
+
+            // Load champion data
+            db.collection("champion").doc("data").get().then((doc) => {
+                if (doc.exists) {
+                    tournamentData.champion = doc.data();
+                }
+                renderChampion();
+            });
+
+            // Load groups (teams are already loaded)
+            renderGroups();
         }
 
-        // Save data to Firebase
-        function saveToFirebase() {
-            return database.ref('tournamentData').set(tournamentData);
+        // Save data to Firestore
+        function saveData() {
+            // Save teams
+            tournamentData.teams.forEach(team => {
+                const { id, ...teamData } = team;
+                db.collection("teams").doc(id).set(teamData);
+            });
+
+            // Save matches
+            tournamentData.matches.forEach(match => {
+                const { id, ...matchData } = match;
+                db.collection("matches").doc(id).set(matchData);
+            });
+
+            // Save knockout data
+            db.collection("knockout").doc("data").set(tournamentData.knockout);
+
+            // Save champion data
+            if (tournamentData.champion) {
+                db.collection("champion").doc("data").set(tournamentData.champion);
+            }
         }
 
         // Show notification
@@ -1782,26 +1713,55 @@
                 group: group
             };
             
-            tournamentData.teams.push(newTeam);
-            saveData();
-            
-            nameInput.value = '';
-            groupInput.value = 'A';
-            
-            showNotification('Team added successfully!');
+            // Add to Firestore
+            db.collection("teams").doc(newTeam.id).set({
+                name: newTeam.name,
+                group: newTeam.group
+            }).then(() => {
+                // Add to local data
+                tournamentData.teams.push(newTeam);
+                saveData();
+                renderAllData();
+                
+                nameInput.value = '';
+                groupInput.value = 'A';
+                
+                showNotification('Team added successfully!');
+            }).catch((error) => {
+                showNotification('Error adding team: ' + error.message, true);
+            });
         }
 
         // Delete a team
         function deleteTeam(teamId) {
-            tournamentData.teams = tournamentData.teams.filter(team => team.id !== teamId);
-            
-            // Also remove any matches that include this team
-            tournamentData.matches = tournamentData.matches.filter(match => 
-                match.team1Id !== teamId && match.team2Id !== teamId
-            );
-            
-            saveData();
-            showNotification('Team deleted successfully!');
+            // Delete from Firestore
+            db.collection("teams").doc(teamId).delete().then(() => {
+                // Remove from local data
+                tournamentData.teams = tournamentData.teams.filter(team => team.id !== teamId);
+                
+                // Also remove any matches that include this team
+                const matchesToDelete = tournamentData.matches.filter(match => 
+                    match.team1Id === teamId || match.team2Id === teamId
+                );
+                
+                // Delete associated matches from Firestore
+                const batch = db.batch();
+                matchesToDelete.forEach(match => {
+                    batch.delete(db.collection("matches").doc(match.id));
+                });
+                batch.commit().then(() => {
+                    // Update local matches
+                    tournamentData.matches = tournamentData.matches.filter(match => 
+                        match.team1Id !== teamId && match.team2Id !== teamId
+                    );
+                    
+                    saveData();
+                    renderAllData();
+                    showNotification('Team deleted successfully!');
+                });
+            }).catch((error) => {
+                showNotification('Error deleting team: ' + error.message, true);
+            });
         }
 
         // Add a new match
@@ -1810,8 +1770,6 @@
             const groupInput = document.getElementById('matchGroup');
             const team1Input = document.getElementById('team1');
             const team2Input = document.getElementById('team2');
-            const score1Input = document.getElementById('matchScore1');
-            const score2Input = document.getElementById('matchScore2');
             const dateInput = document.getElementById('matchDateTime');
             const venueInput = document.getElementById('matchVenue');
             
@@ -1819,8 +1777,6 @@
             const group = groupInput.value;
             const team1Id = team1Input.value;
             const team2Id = team2Input.value;
-            const score1 = parseInt(score1Input.value);
-            const score2 = parseInt(score2Input.value);
             const date = dateInput.value;
             const venue = venueInput.value.trim();
             
@@ -1839,39 +1795,65 @@
                 return;
             }
             
+            const score1 = parseInt(document.getElementById('matchScore1').value);
+            const score2 = parseInt(document.getElementById('matchScore2').value);
             const newMatch = {
                 id: Date.now().toString(),
                 stage: stage,
                 group: group,
                 team1Id: team1Id,
                 team2Id: team2Id,
-                score1: isNaN(score1) ? null : score1,
-                score2: isNaN(score2) ? null : score2,
                 date: date,
-                venue: venue || 'Virtual Stadium'
+                venue: venue || 'Virtual Stadium',
+                score1: isNaN(score1) ? null : score1,
+                score2: isNaN(score2) ? null : score2
             };
             
-            tournamentData.matches.push(newMatch);
-            saveData();
-            
-            // Reset form
-            stageInput.value = 'group';
-            groupInput.value = 'A';
-            team1Input.value = '';
-            team2Input.value = '';
-            score1Input.value = '0';
-            score2Input.value = '0';
-            dateInput.value = '';
-            venueInput.value = '';
-            
-            showNotification('Match scheduled successfully!');
+            // Add to Firestore
+            db.collection("matches").doc(newMatch.id).set({
+                stage: newMatch.stage,
+                group: newMatch.group,
+                team1Id: newMatch.team1Id,
+                team2Id: newMatch.team2Id,
+                date: newMatch.date,
+                venue: newMatch.venue,
+                score1: newMatch.score1,
+                score2: newMatch.score2
+            }).then(() => {
+                // Add to local data
+                tournamentData.matches.push(newMatch);
+                saveData();
+                renderAllData();
+                
+                // Reset form
+                stageInput.value = 'group';
+                groupInput.value = 'A';
+                team1Input.value = '';
+                team2Input.value = '';
+                dateInput.value = '';
+                venueInput.value = '';
+                document.getElementById('matchScore1').value = '0';
+                document.getElementById('matchScore2').value = '0';
+                
+                showNotification('Match scheduled successfully!');
+            }).catch((error) => {
+                showNotification('Error scheduling match: ' + error.message, true);
+            });
         }
 
         // Delete a match
         function deleteMatch(matchId) {
-            tournamentData.matches = tournamentData.matches.filter(match => match.id !== matchId);
-            saveData();
-            showNotification('Match deleted successfully!');
+            // Delete from Firestore
+            db.collection("matches").doc(matchId).delete().then(() => {
+                // Remove from local data
+                tournamentData.matches = tournamentData.matches.filter(match => match.id !== matchId);
+                
+                saveData();
+                renderAllData();
+                showNotification('Match deleted successfully!');
+            }).catch((error) => {
+                showNotification('Error deleting match: ' + error.message, true);
+            });
         }
 
         // Set semifinal matches
@@ -1922,34 +1904,60 @@
                 venue: venue || 'Virtual Stadium'
             };
             
-            // Add to tournament data
-            tournamentData.knockout.semifinal1 = semifinal1;
-            tournamentData.knockout.semifinal2 = semifinal2;
+            // Add to Firestore
+            const batch = db.batch();
+            batch.set(db.collection("matches").doc(semifinal1.id), {
+                stage: semifinal1.stage,
+                team1Id: semifinal1.team1Id,
+                team2Id: semifinal1.team2Id,
+                date: semifinal1.date,
+                venue: semifinal1.venue
+            });
+            batch.set(db.collection("matches").doc(semifinal2.id), {
+                stage: semifinal2.stage,
+                team1Id: semifinal2.team1Id,
+                team2Id: semifinal2.team2Id,
+                date: semifinal2.date,
+                venue: semifinal2.venue
+            });
+            batch.set(db.collection("knockout").doc("data"), {
+                semifinal1: semifinal1,
+                semifinal2: semifinal2
+            }, { merge: true });
             
-            // Also add to matches array
-            tournamentData.matches.push(semifinal1, semifinal2);
-            
-            saveData();
-            showNotification('Semifinal matches set successfully!');
+            batch.commit().then(() => {
+                // Add to tournament data
+                tournamentData.knockout.semifinal1 = semifinal1;
+                tournamentData.knockout.semifinal2 = semifinal2;
+                
+                // Also add to matches array
+                tournamentData.matches.push(semifinal1, semifinal2);
+                
+                saveData();
+                renderAllData();
+                showNotification('Semifinal matches set successfully!');
+            }).catch((error) => {
+                showNotification('Error setting semifinals: ' + error.message, true);
+            });
         }
 
         // Set final match result
         function setFinalResult() {
             const team1Input = document.getElementById('finalTeam1');
             const team2Input = document.getElementById('finalTeam2');
-            const score1Input = document.getElementById('finalScore1');
-            const score2Input = document.getElementById('finalScore2');
             const dateInput = document.getElementById('finalDateTime');
             const venueInput = document.getElementById('finalVenue');
+            const score1Input = document.getElementById('finalScore1');
+            const score2Input = document.getElementById('finalScore2');
             const championInput = document.getElementById('championTeamSelect');
             const publishInput = document.getElementById('publishResult');
             
             const team1Id = team1Input.value;
             const team2Id = team2Input.value;
-            const score1 = parseInt(score1Input.value);
-            const score2 = parseInt(score2Input.value);
             const date = dateInput.value;
             const venue = venueInput.value.trim();
+            const score1 = parseInt(score1Input.value);
+            const score2 = parseInt(score2Input.value);
             const championId = championInput.value;
             const publish = publishInput.checked;
             
@@ -1987,21 +1995,43 @@
             };
             
             // Set tournament champion
-            tournamentData.champion = {
+            const championData = {
                 teamId: championId,
                 score1: score1,
                 score2: score2,
                 published: publish
             };
             
-            // Add to tournament data
-            tournamentData.knockout.final = finalMatch;
+            // Add to Firestore
+            const batch = db.batch();
+            batch.set(db.collection("matches").doc(finalMatch.id), {
+                stage: finalMatch.stage,
+                team1Id: finalMatch.team1Id,
+                team2Id: finalMatch.team2Id,
+                date: finalMatch.date,
+                venue: finalMatch.venue,
+                score1: finalMatch.score1,
+                score2: finalMatch.score2
+            });
+            batch.set(db.collection("knockout").doc("data"), {
+                final: finalMatch
+            }, { merge: true });
+            batch.set(db.collection("champion").doc("data"), championData);
             
-            // Also add to matches array
-            tournamentData.matches.push(finalMatch);
-            
-            saveData();
-            showNotification('Final match result set successfully!');
+            batch.commit().then(() => {
+                // Add to tournament data
+                tournamentData.knockout.final = finalMatch;
+                tournamentData.champion = championData;
+                
+                // Also add to matches array
+                tournamentData.matches.push(finalMatch);
+                
+                saveData();
+                renderAllData();
+                showNotification('Final match result set successfully!');
+            }).catch((error) => {
+                showNotification('Error setting final result: ' + error.message, true);
+            });
         }
 
         // Render upcoming matches on home page
