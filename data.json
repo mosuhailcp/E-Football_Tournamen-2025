@@ -1,0 +1,16 @@
+{
+    "teams": [],
+    "matches": [],
+    "groups": {
+        "A": [],
+        "B": [],
+        "C": [],
+        "D": []
+    },
+    "knockout": {
+        "semifinal1": null,
+        "semifinal2": null,
+        "final": null
+    },
+    "champion": null
+}
