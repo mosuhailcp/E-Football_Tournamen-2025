@@ -793,7 +793,7 @@
             background: var(--danger);
         }
 
-        .gist-config {
+        .firebase-config {
             background: rgba(10, 15, 30, 0.95);
             border-radius: 15px;
             padding: 1.5rem;
@@ -801,12 +801,12 @@
             border: 1px solid rgba(0, 194, 255, 0.3);
         }
 
-        .gist-config h3 {
+        .firebase-config h3 {
             color: var(--accent);
             margin-bottom: 1rem;
         }
 
-        .gist-info {
+        .firebase-info {
             background: rgba(0, 0, 0, 0.3);
             padding: 1rem;
             border-radius: 8px;
@@ -1105,35 +1105,13 @@
                     <button class="btn btn-danger" id="logoutBtn">Logout</button>
                 </div>
                 
-                <!-- GitHub Gist Configuration -->
-                <div class="gist-config">
-                    <h3>GitHub Gist Configuration</h3>
-                    <p>To enable data synchronization across devices, configure your GitHub Gist settings:</p>
-                    
-                    <div class="gist-info">
-                        <p><strong>How to set up:</strong></p>
-                        <ol>
-                            <li>Create a GitHub account if you don't have one</li>
-                            <li>Create a new Gist at <a href="https://gist.github.com" target="_blank">gist.github.com</a></li>
-                            <li>Name your Gist file <code>eFootballData.json</code></li>
-                            <li>Copy the Gist ID from the URL (the long hash)</li>
-                            <li>Generate a personal access token with "gist" scope</li>
-                        </ol>
+                <!-- Firebase Configuration Status -->
+                <div class="firebase-config">
+                    <h3>Firebase Realtime Database</h3>
+                    <div class="firebase-info">
+                        <p><strong>Status:</strong> <span id="firebaseStatus">Connected</span></p>
+                        <p>All data is automatically synchronized with Firebase in real-time.</p>
                     </div>
-                    
-                    <div class="form-group">
-                        <label>GitHub Gist ID</label>
-                        <input type="text" id="gistId" class="form-control" placeholder="Enter your Gist ID">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>GitHub Access Token</label>
-                        <input type="password" id="githubToken" class="form-control" placeholder="Enter your access token">
-                    </div>
-                    
-                    <button class="btn" id="saveGistConfigBtn">Save Configuration</button>
-                    <button class="btn" id="loadFromGistBtn">Load Data from Gist</button>
-                    <button class="btn" id="saveToGistBtn">Save Data to Gist</button>
                 </div>
                 
                 <div class="admin-tabs">
@@ -1375,10 +1353,29 @@
         </div>
     </footer>
     
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-database-compat.js"></script>
+    
     <script>
+        // Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCSpxxUgytvqDH7jBYWz_TI107_O-X3nx8",
+            authDomain: "efootballtournamen2025.firebaseapp.com",
+            databaseURL: "https://efootballtournamen2025-default-rtdb.asia-southeast1.firebasedatabase.app",
+            projectId: "efootballtournamen2025",
+            storageBucket: "efootballtournamen2025.appspot.com",
+            messagingSenderId: "541951066726",
+            appId: "1:541951066726:web:e0f587ac2dd0a8c4fb23a7",
+            measurementId: "G-PC1VZVDDRE"
+        };
+
+        // Initialize Firebase
+        const app = firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
         // Data storage and initialization
         const STORAGE_KEY = 'eFootballLeagueData';
-        const GIST_CONFIG_KEY = 'eFootballGistConfig';
         let tournamentData = {
             teams: [],
             matches: [],
@@ -1390,35 +1387,26 @@
             champion: null
         };
 
-        let gistConfig = {
-            gistId: '',
-            token: ''
-        };
-
-        // Initialize data from localStorage
+        // Initialize data from Firebase or localStorage
         function initData() {
-            // Load gist configuration
-            const savedGistConfig = localStorage.getItem(GIST_CONFIG_KEY);
-            if (savedGistConfig) {
-                gistConfig = JSON.parse(savedGistConfig);
-                document.getElementById('gistId').value = gistConfig.gistId || '';
-                document.getElementById('githubToken').value = gistConfig.token || '';
-            }
-            
-            // Load tournament data
-            const savedData = localStorage.getItem(STORAGE_KEY);
-            if (savedData) {
-                tournamentData = JSON.parse(savedData);
+            // Try to load from Firebase first
+            loadFromFirebase().then(() => {
+                console.log("Data loaded from Firebase");
+                document.getElementById('firebaseStatus').textContent = "Connected";
                 renderAllData();
-            } else {
-                // If no local data, try loading from Gist
-                if (gistConfig.gistId && gistConfig.token) {
-                    loadFromGist();
+            }).catch(error => {
+                console.log("Firebase load failed, trying localStorage", error);
+                document.getElementById('firebaseStatus').textContent = "Offline (using local data)";
+                // Load from localStorage as fallback
+                const savedData = localStorage.getItem(STORAGE_KEY);
+                if (savedData) {
+                    tournamentData = JSON.parse(savedData);
+                    renderAllData();
                 } else {
-                    // Fallback to initial data
+                    // If no local data, load initial data
                     loadInitialData();
                 }
-            }
+            });
         }
 
         // Load initial data for first-time users
@@ -1466,88 +1454,46 @@
                 champion: null
             };
             saveData();
-            renderAllData();
         }
 
-        // Save data to localStorage
+        // Save data to Firebase and localStorage
         function saveData() {
+            // Save to localStorage
             localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
+            
+            // Save to Firebase
+            saveToFirebase().then(() => {
+                console.log("Data saved to Firebase");
+            }).catch(error => {
+                console.error("Error saving to Firebase:", error);
+                showNotification('Failed to save data to cloud', true);
+            });
+            
             renderAllData();
         }
 
-        // Save Gist configuration
-        function saveGistConfig() {
-            gistConfig = {
-                gistId: document.getElementById('gistId').value,
-                token: document.getElementById('githubToken').value
-            };
-            localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(gistConfig));
-            showNotification('GitHub Gist configuration saved!');
-        }
-
-        // Load data from GitHub Gist
-        async function loadFromGist() {
-            if (!gistConfig.gistId || !gistConfig.token) {
-                showNotification('Please configure GitHub Gist settings first', true);
-                return;
-            }
-
-            try {
-                const response = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
-                    headers: {
-                        'Authorization': `token ${gistConfig.token}`
+        // Load data from Firebase
+        function loadFromFirebase() {
+            return new Promise((resolve, reject) => {
+                database.ref('tournamentData').once('value').then((snapshot) => {
+                    const data = snapshot.val();
+                    if (data) {
+                        tournamentData = data;
+                        // Also save to localStorage for offline use
+                        localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
+                        resolve();
+                    } else {
+                        reject("No data in Firebase");
                     }
+                }).catch(error => {
+                    reject(error);
                 });
-
-                if (!response.ok) {
-                    throw new Error('Failed to fetch Gist data');
-                }
-
-                const gistData = await response.json();
-                const content = gistData.files['eFootballData.json'].content;
-                tournamentData = JSON.parse(content);
-                
-                saveData(); // Save to localStorage
-                renderAllData();
-                showNotification('Data loaded successfully from GitHub Gist!');
-            } catch (error) {
-                console.error('Error loading from Gist:', error);
-                showNotification('Failed to load data from GitHub Gist', true);
-            }
+            });
         }
 
-        // Save data to GitHub Gist
-        async function saveToGist() {
-            if (!gistConfig.gistId || !gistConfig.token) {
-                showNotification('Please configure GitHub Gist settings first', true);
-                return;
-            }
-
-            try {
-                const response = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
-                    method: 'PATCH',
-                    headers: {
-                        'Authorization': `token ${gistConfig.token}`,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        files: {
-                            'eFootballData.json': {
-                                content: JSON.stringify(tournamentData)
-                            }
-                        }
-                    })
-                });
-
-                if (!response.ok) {
-                    throw new Error('Failed to update Gist');
-                }
-
-                showNotification('Data saved to GitHub Gist successfully!');
-            } catch (error) {
-                console.error('Error saving to Gist:', error);
-                showNotification('Failed to save data to GitHub Gist', true);
-            }
+        // Save data to Firebase
+        function saveToFirebase() {
+            return database.ref('tournamentData').set(tournamentData);
         }
 
         // Show notification
@@ -1839,7 +1785,6 @@
             
             tournamentData.teams.push(newTeam);
             saveData();
-            renderAllData();
             
             nameInput.value = '';
             groupInput.value = 'A';
@@ -1857,7 +1802,6 @@
             );
             
             saveData();
-            renderAllData();
             showNotification('Team deleted successfully!');
         }
 
@@ -1910,7 +1854,6 @@
             
             tournamentData.matches.push(newMatch);
             saveData();
-            renderAllData();
             
             // Reset form
             stageInput.value = 'group';
@@ -1929,7 +1872,6 @@
         function deleteMatch(matchId) {
             tournamentData.matches = tournamentData.matches.filter(match => match.id !== matchId);
             saveData();
-            renderAllData();
             showNotification('Match deleted successfully!');
         }
 
@@ -1989,7 +1931,6 @@
             tournamentData.matches.push(semifinal1, semifinal2);
             
             saveData();
-            renderAllData();
             showNotification('Semifinal matches set successfully!');
         }
 
@@ -2061,7 +2002,6 @@
             tournamentData.matches.push(finalMatch);
             
             saveData();
-            renderAllData();
             showNotification('Final match result set successfully!');
         }
 
@@ -2310,11 +2250,6 @@
             
             // Set final result button
             document.getElementById('setFinalResultBtn').addEventListener('click', setFinalResult);
-            
-            // Gist configuration buttons
-            document.getElementById('saveGistConfigBtn').addEventListener('click', saveGistConfig);
-            document.getElementById('loadFromGistBtn').addEventListener('click', loadFromGist);
-            document.getElementById('saveToGistBtn').addEventListener('click', saveToGist);
             
             // Set up countdown timer
             updateCountdown();
