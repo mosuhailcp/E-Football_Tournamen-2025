@@ -793,6 +793,27 @@
             background: var(--danger);
         }
 
+        .gist-config {
+            background: rgba(10, 15, 30, 0.95);
+            border-radius: 15px;
+            padding: 1.5rem;
+            margin: 2rem 0;
+            border: 1px solid rgba(0, 194, 255, 0.3);
+        }
+
+        .gist-config h3 {
+            color: var(--accent);
+            margin-bottom: 1rem;
+        }
+
+        .gist-info {
+            background: rgba(0, 0, 0, 0.3);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1rem;
+            font-size: 0.9rem;
+        }
+
         /* Animations */
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(20px); }
@@ -1084,6 +1105,37 @@
                     <button class="btn btn-danger" id="logoutBtn">Logout</button>
                 </div>
                 
+                <!-- GitHub Gist Configuration -->
+                <div class="gist-config">
+                    <h3>GitHub Gist Configuration</h3>
+                    <p>To enable data synchronization across devices, configure your GitHub Gist settings:</p>
+                    
+                    <div class="gist-info">
+                        <p><strong>How to set up:</strong></p>
+                        <ol>
+                            <li>Create a GitHub account if you don't have one</li>
+                            <li>Create a new Gist at <a href="https://gist.github.com" target="_blank">gist.github.com</a></li>
+                            <li>Name your Gist file <code>eFootballData.json</code></li>
+                            <li>Copy the Gist ID from the URL (the long hash)</li>
+                            <li>Generate a personal access token with "gist" scope</li>
+                        </ol>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>GitHub Gist ID</label>
+                        <input type="text" id="gistId" class="form-control" placeholder="Enter your Gist ID">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>GitHub Access Token</label>
+                        <input type="password" id="githubToken" class="form-control" placeholder="Enter your access token">
+                    </div>
+                    
+                    <button class="btn" id="saveGistConfigBtn">Save Configuration</button>
+                    <button class="btn" id="loadFromGistBtn">Load Data from Gist</button>
+                    <button class="btn" id="saveToGistBtn">Save Data to Gist</button>
+                </div>
+                
                 <div class="admin-tabs">
                     <div class="admin-tab active" data-tab="teams">Teams</div>
                     <div class="admin-tab" data-tab="matches">Matches</div>
@@ -1162,17 +1214,16 @@
                         </select>
                     </div>
                     
-                    
-<div class="form-group">
-    <label>Team 1 Goals</label>
-    <input type="number" id="matchScore1" class="form-control" value="0">
-</div>
-<div class="form-group">
-    <label>Team 2 Goals</label>
-    <input type="number" id="matchScore2" class="form-control" value="0">
-</div>
+                    <div class="form-group">
+                        <label>Team 1 Goals</label>
+                        <input type="number" id="matchScore1" class="form-control" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Team 2 Goals</label>
+                        <input type="number" id="matchScore2" class="form-control" value="0">
+                    </div>
 
-<div class="form-group">
+                    <div class="form-group">
                         <label>Match Date & Time</label>
                         <input type="datetime-local" id="matchDateTime" class="form-control">
                     </div>
@@ -1266,17 +1317,16 @@
                         </select>
                     </div>
                     
-                    
-<div class="form-group">
-    <label>Team 1 Goals</label>
-    <input type="number" id="matchScore1" class="form-control" value="0">
-</div>
-<div class="form-group">
-    <label>Team 2 Goals</label>
-    <input type="number" id="matchScore2" class="form-control" value="0">
-</div>
+                    <div class="form-group">
+                        <label>Team 1 Goals</label>
+                        <input type="number" id="finalScore1" class="form-control" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>Team 2 Goals</label>
+                        <input type="number" id="finalScore2" class="form-control" value="0">
+                    </div>
 
-<div class="form-group">
+                    <div class="form-group">
                         <label>Match Date & Time</label>
                         <input type="datetime-local" id="finalDateTime" class="form-control">
                     </div>
@@ -1284,15 +1334,6 @@
                     <div class="form-group">
                         <label>Venue</label>
                         <input type="text" id="finalVenue" class="form-control" placeholder="Enter venue name">
-                    </div>
-                    
-                    <div class="form-group">
-                        <label>Match Result</label>
-                        <div style="display: flex; gap: 1rem; align-items: center;">
-                            <input type="number" id="finalScore1" class="form-control" value="0" style="width: 80px;">
-                            <span>:</span>
-                            <input type="number" id="finalScore2" class="form-control" value="0" style="width: 80px;">
-                        </div>
                     </div>
                     
                     <div class="form-group">
@@ -1337,15 +1378,10 @@
     <script>
         // Data storage and initialization
         const STORAGE_KEY = 'eFootballLeagueData';
+        const GIST_CONFIG_KEY = 'eFootballGistConfig';
         let tournamentData = {
             teams: [],
             matches: [],
-            groups: {
-                A: [],
-                B: [],
-                C: [],
-                D: []
-            },
             knockout: {
                 semifinal1: null,
                 semifinal2: null,
@@ -1354,18 +1390,164 @@
             champion: null
         };
 
+        let gistConfig = {
+            gistId: '',
+            token: ''
+        };
+
         // Initialize data from localStorage
         function initData() {
+            // Load gist configuration
+            const savedGistConfig = localStorage.getItem(GIST_CONFIG_KEY);
+            if (savedGistConfig) {
+                gistConfig = JSON.parse(savedGistConfig);
+                document.getElementById('gistId').value = gistConfig.gistId || '';
+                document.getElementById('githubToken').value = gistConfig.token || '';
+            }
+            
+            // Load tournament data
             const savedData = localStorage.getItem(STORAGE_KEY);
             if (savedData) {
                 tournamentData = JSON.parse(savedData);
+                renderAllData();
+            } else {
+                // If no local data, try loading from Gist
+                if (gistConfig.gistId && gistConfig.token) {
+                    loadFromGist();
+                } else {
+                    // Fallback to initial data
+                    loadInitialData();
+                }
             }
+        }
+
+        // Load initial data for first-time users
+        function loadInitialData() {
+            tournamentData = {
+                teams: [
+                    { id: "1", name: "Real Madrid", group: "A" },
+                    { id: "2", name: "Bayern Munich", group: "A" },
+                    { id: "3", name: "Manchester City", group: "B" },
+                    { id: "4", name: "Liverpool", group: "B" },
+                    { id: "5", name: "Barcelona", group: "C" },
+                    { id: "6", name: "Juventus", group: "C" },
+                    { id: "7", name: "Paris Saint-Germain", group: "D" },
+                    { id: "8", name: "Chelsea", group: "D" }
+                ],
+                matches: [
+                    {
+                        id: "m1",
+                        stage: "group",
+                        group: "A",
+                        team1Id: "1",
+                        team2Id: "2",
+                        date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
+                        venue: "Santiago Bernabeu",
+                        score1: null,
+                        score2: null
+                    },
+                    {
+                        id: "m2",
+                        stage: "group",
+                        group: "B",
+                        team1Id: "3",
+                        team2Id: "4",
+                        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
+                        venue: "Etihad Stadium",
+                        score1: null,
+                        score2: null
+                    }
+                ],
+                knockout: {
+                    semifinal1: null,
+                    semifinal2: null,
+                    final: null
+                },
+                champion: null
+            };
+            saveData();
             renderAllData();
         }
 
         // Save data to localStorage
         function saveData() {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
+            renderAllData();
+        }
+
+        // Save Gist configuration
+        function saveGistConfig() {
+            gistConfig = {
+                gistId: document.getElementById('gistId').value,
+                token: document.getElementById('githubToken').value
+            };
+            localStorage.setItem(GIST_CONFIG_KEY, JSON.stringify(gistConfig));
+            showNotification('GitHub Gist configuration saved!');
+        }
+
+        // Load data from GitHub Gist
+        async function loadFromGist() {
+            if (!gistConfig.gistId || !gistConfig.token) {
+                showNotification('Please configure GitHub Gist settings first', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
+                    headers: {
+                        'Authorization': `token ${gistConfig.token}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to fetch Gist data');
+                }
+
+                const gistData = await response.json();
+                const content = gistData.files['eFootballData.json'].content;
+                tournamentData = JSON.parse(content);
+                
+                saveData(); // Save to localStorage
+                renderAllData();
+                showNotification('Data loaded successfully from GitHub Gist!');
+            } catch (error) {
+                console.error('Error loading from Gist:', error);
+                showNotification('Failed to load data from GitHub Gist', true);
+            }
+        }
+
+        // Save data to GitHub Gist
+        async function saveToGist() {
+            if (!gistConfig.gistId || !gistConfig.token) {
+                showNotification('Please configure GitHub Gist settings first', true);
+                return;
+            }
+
+            try {
+                const response = await fetch(`https://api.github.com/gists/${gistConfig.gistId}`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `token ${gistConfig.token}`,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        files: {
+                            'eFootballData.json': {
+                                content: JSON.stringify(tournamentData)
+                            }
+                        }
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Failed to update Gist');
+                }
+
+                showNotification('Data saved to GitHub Gist successfully!');
+            } catch (error) {
+                console.error('Error saving to Gist:', error);
+                showNotification('Failed to save data to GitHub Gist', true);
+            }
         }
 
         // Show notification
@@ -1685,6 +1867,8 @@
             const groupInput = document.getElementById('matchGroup');
             const team1Input = document.getElementById('team1');
             const team2Input = document.getElementById('team2');
+            const score1Input = document.getElementById('matchScore1');
+            const score2Input = document.getElementById('matchScore2');
             const dateInput = document.getElementById('matchDateTime');
             const venueInput = document.getElementById('matchVenue');
             
@@ -1692,6 +1876,8 @@
             const group = groupInput.value;
             const team1Id = team1Input.value;
             const team2Id = team2Input.value;
+            const score1 = parseInt(score1Input.value);
+            const score2 = parseInt(score2Input.value);
             const date = dateInput.value;
             const venue = venueInput.value.trim();
             
@@ -1710,16 +1896,14 @@
                 return;
             }
             
-            const score1 = parseInt(document.getElementById('matchScore1').value);
-            const score2 = parseInt(document.getElementById('matchScore2').value);
             const newMatch = {
-                score1: isNaN(score1) ? null : score1,
-                score2: isNaN(score2) ? null : score2,
                 id: Date.now().toString(),
                 stage: stage,
                 group: group,
                 team1Id: team1Id,
                 team2Id: team2Id,
+                score1: isNaN(score1) ? null : score1,
+                score2: isNaN(score2) ? null : score2,
                 date: date,
                 venue: venue || 'Virtual Stadium'
             };
@@ -1733,6 +1917,8 @@
             groupInput.value = 'A';
             team1Input.value = '';
             team2Input.value = '';
+            score1Input.value = '0';
+            score2Input.value = '0';
             dateInput.value = '';
             venueInput.value = '';
             
@@ -1811,19 +1997,19 @@
         function setFinalResult() {
             const team1Input = document.getElementById('finalTeam1');
             const team2Input = document.getElementById('finalTeam2');
-            const dateInput = document.getElementById('finalDateTime');
-            const venueInput = document.getElementById('finalVenue');
             const score1Input = document.getElementById('finalScore1');
             const score2Input = document.getElementById('finalScore2');
+            const dateInput = document.getElementById('finalDateTime');
+            const venueInput = document.getElementById('finalVenue');
             const championInput = document.getElementById('championTeamSelect');
             const publishInput = document.getElementById('publishResult');
             
             const team1Id = team1Input.value;
             const team2Id = team2Input.value;
-            const date = dateInput.value;
-            const venue = venueInput.value.trim();
             const score1 = parseInt(score1Input.value);
             const score2 = parseInt(score2Input.value);
+            const date = dateInput.value;
+            const venue = venueInput.value.trim();
             const championId = championInput.value;
             const publish = publishInput.checked;
             
@@ -2124,6 +2310,11 @@
             
             // Set final result button
             document.getElementById('setFinalResultBtn').addEventListener('click', setFinalResult);
+            
+            // Gist configuration buttons
+            document.getElementById('saveGistConfigBtn').addEventListener('click', saveGistConfig);
+            document.getElementById('loadFromGistBtn').addEventListener('click', loadFromGist);
+            document.getElementById('saveToGistBtn').addEventListener('click', saveToGist);
             
             // Set up countdown timer
             updateCountdown();
