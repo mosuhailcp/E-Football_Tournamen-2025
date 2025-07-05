@@ -959,7 +959,6 @@
     </style>
 </head>
 <body>
-<!-- Note: Make sure to upload a data.json file with tournament data in the same directory -->
     <!-- Header -->
     <header>
         <div class="header-container">
@@ -1356,23 +1355,17 @@
         };
 
         // Initialize data from localStorage
-        
-        async function initData() {
-            try {
-                const response = await fetch('data.json');
-                const data = await response.json();
-                tournamentData = data;
-                renderAllData();
-            } catch (error) {
-                showNotification('Failed to load tournament data', true);
-                console.error(error);
+        function initData() {
+            const savedData = localStorage.getItem(STORAGE_KEY);
+            if (savedData) {
+                tournamentData = JSON.parse(savedData);
             }
+            renderAllData();
         }
-
 
         // Save data to localStorage
         function saveData() {
-            );
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(tournamentData));
         }
 
         // Show notification
