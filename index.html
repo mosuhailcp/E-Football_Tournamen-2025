@@ -1025,8 +1025,8 @@
             <div class="champion-section" id="championSection" style="display: none;">
                 <h3 class="champion-title">2025 E-Football Champions</h3>
                 <div class="champion-score" id="championScore">4 - 2</div>
-                <div class="champion-team" id="championTeam">FC Barcelona</div>
-                <p class="champion-subtitle" id="championSubtitle">FC Barcelona defeats Real Madrid in an epic final to claim the trophy!</p>
+                <div class="champion-team" id="championTeam">TBD</div>
+                <p class="champion-subtitle" id="championSubtitle">TBD defeats Real Madrid in an epic final to claim the trophy!</p>
             </div>
         </section>
         
@@ -1162,7 +1162,17 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
+                    
+<div class="form-group">
+    <label>Team 1 Goals</label>
+    <input type="number" id="matchScore1" class="form-control" value="0">
+</div>
+<div class="form-group">
+    <label>Team 2 Goals</label>
+    <input type="number" id="matchScore2" class="form-control" value="0">
+</div>
+
+<div class="form-group">
                         <label>Match Date & Time</label>
                         <input type="datetime-local" id="matchDateTime" class="form-control">
                     </div>
@@ -1256,7 +1266,17 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
+                    
+<div class="form-group">
+    <label>Team 1 Goals</label>
+    <input type="number" id="matchScore1" class="form-control" value="0">
+</div>
+<div class="form-group">
+    <label>Team 2 Goals</label>
+    <input type="number" id="matchScore2" class="form-control" value="0">
+</div>
+
+<div class="form-group">
                         <label>Match Date & Time</label>
                         <input type="datetime-local" id="finalDateTime" class="form-control">
                     </div>
@@ -1690,7 +1710,11 @@
                 return;
             }
             
+            const score1 = parseInt(document.getElementById('matchScore1').value);
+            const score2 = parseInt(document.getElementById('matchScore2').value);
             const newMatch = {
+                score1: isNaN(score1) ? null : score1,
+                score2: isNaN(score2) ? null : score2,
                 id: Date.now().toString(),
                 stage: stage,
                 group: group,
