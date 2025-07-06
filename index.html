@@ -1735,6 +1735,7 @@
 
         // Render admin dropdowns
         function renderAdminLists() {
+            // First render all team dropdowns
             const teamDropdowns = [
                 'team1', 'team2', 
                 'sf1Team1', 'sf1Team2', 
@@ -1763,6 +1764,56 @@
                     });
                 }
             });
+            
+            // Special handling for match group teams
+            updateTeamDropdownsByGroup();
+        }
+
+        // Update team dropdowns based on selected group
+        function updateTeamDropdownsByGroup() {
+            const groupSelect = document.getElementById('matchGroup');
+            const team1Select = document.getElementById('team1');
+            const team2Select = document.getElementById('team2');
+            
+            if (groupSelect && team1Select && team2Select) {
+                groupSelect.addEventListener('change', function() {
+                    const selectedGroup = this.value;
+                    
+                    // Filter teams by selected group
+                    const groupTeams = tournamentData.teams.filter(team => team.group === selectedGroup);
+                    
+                    // Update team1 dropdown
+                    team1Select.innerHTML = '';
+                    const defaultOption1 = document.createElement('option');
+                    defaultOption1.value = '';
+                    defaultOption1.textContent = 'Select Team 1';
+                    team1Select.appendChild(defaultOption1);
+                    
+                    groupTeams.forEach(team => {
+                        const option = document.createElement('option');
+                        option.value = team.id;
+                        option.textContent = team.name;
+                        team1Select.appendChild(option);
+                    });
+                    
+                    // Update team2 dropdown
+                    team2Select.innerHTML = '';
+                    const defaultOption2 = document.createElement('option');
+                    defaultOption2.value = '';
+                    defaultOption2.textContent = 'Select Team 2';
+                    team2Select.appendChild(defaultOption2);
+                    
+                    groupTeams.forEach(team => {
+                        const option = document.createElement('option');
+                        option.value = team.id;
+                        option.textContent = team.name;
+                        team2Select.appendChild(option);
+                    });
+                });
+                
+                // Trigger change event to populate initially
+                groupSelect.dispatchEvent(new Event('change'));
+            }
         }
 
         // Add a new team
@@ -2207,6 +2258,7 @@
                     sessionStorage.setItem('isAdminLoggedIn', 'true');
                     document.getElementById('loginContainer').style.display = 'none';
                     document.getElementById('adminPanel').style.display = 'block';
+                    renderAdminLists(); // Refresh admin lists after login
                 } else {
                     showNotification('Invalid credentials! Please try again.', true);
                 }
@@ -2237,6 +2289,11 @@
                     // Show target content
                     const targetTab = this.getAttribute('data-tab');
                     document.getElementById(targetTab + 'Content').classList.add('active');
+                    
+                    // Refresh admin lists when matches tab is selected
+                    if (targetTab === 'matches') {
+                        renderAdminLists();
+                    }
                 });
             });
             
