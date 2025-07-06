@@ -455,7 +455,7 @@
 
         .standings-header {
             display: grid;
-            grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr;
+            grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1fr;
             font-weight: 600;
             padding: 0.5rem 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.1);
@@ -466,7 +466,7 @@
 
         .team-row {
             display: grid;
-            grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr;
+            grid-template-columns: 3fr 1fr 1fr 1fr 1fr 1fr 1fr;
             padding: 0.7rem 0;
             border-bottom: 1px solid rgba(255, 255, 255, 0.05);
             font-size: 0.9rem;
@@ -742,6 +742,10 @@
             background: linear-gradient(to right, var(--warning), #f59e0b);
         }
 
+        .btn-success {
+            background: linear-gradient(to right, var(--success), #10b981);
+        }
+
         .login-container {
             max-width: 400px;
             margin: 5rem auto;
@@ -823,6 +827,28 @@
             border-radius: 8px;
             margin-bottom: 1rem;
             font-size: 0.9rem;
+        }
+
+        /* Match Filters */
+        .match-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.5rem 1rem;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 30px;
+            cursor: pointer;
+            transition: var(--transition);
+            border: 1px solid rgba(0, 194, 255, 0.3);
+        }
+
+        .filter-btn.active {
+            background: linear-gradient(to right, var(--accent), var(--accent2));
+            border-color: transparent;
         }
 
         /* Animations */
@@ -958,6 +984,25 @@
             .matches-grid {
                 grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
             }
+
+            .standings-header {
+                grid-template-columns: 3fr 1fr 1fr 1fr 1fr;
+                font-size: 0.8rem;
+            }
+
+            .team-row {
+                grid-template-columns: 3fr 1fr 1fr 1fr 1fr;
+                font-size: 0.8rem;
+            }
+
+            .team-name-cell div:last-child {
+                display: none;
+            }
+
+            .bracket {
+                flex-direction: column;
+                align-items: center;
+            }
         }
 
         @media (max-width: 768px) {
@@ -965,13 +1010,20 @@
                 flex-wrap: wrap;
             }
             
-            .bracket {
-                flex-direction: column;
-                align-items: center;
-            }
-            
             .admin-tabs {
                 flex-wrap: wrap;
+            }
+
+            .standings-header {
+                grid-template-columns: 2fr 1fr 1fr 1fr;
+            }
+
+            .team-row {
+                grid-template-columns: 2fr 1fr 1fr 1fr;
+            }
+
+            .team-logo-small {
+                display: none;
             }
         }
 
@@ -986,6 +1038,26 @@
             
             .match-card:hover {
                 transform: none;
+            }
+
+            .standings-header {
+                grid-template-columns: 2fr 1fr 1fr;
+            }
+
+            .team-row {
+                grid-template-columns: 2fr 1fr 1fr;
+            }
+
+            .team-name-cell div:last-child {
+                display: inline;
+            }
+
+            .champion-team {
+                font-size: 2rem;
+            }
+
+            .champion-score {
+                font-size: 3rem;
             }
         }
     </style>
@@ -1170,16 +1242,24 @@
                 <!-- Matches Management -->
                 <div class="admin-content" id="matchesContent">
                     <h3>Manage Matches</h3>
+                    <div class="match-filters">
+                        <div class="filter-btn active" data-filter="all">All Matches</div>
+                        <div class="filter-btn" data-filter="upcoming">Upcoming</div>
+                        <div class="filter-btn" data-filter="completed">Completed</div>
+                    </div>
+                    
                     <div class="form-group">
                         <label>Match Stage</label>
                         <select id="matchStage" class="form-control">
                             <option value="group">Group Stage</option>
+                            <option value="group2">Group 2nd Round</option>
+                            <option value="quarterfinal">Quarterfinal</option>
                             <option value="semifinal">Semifinal</option>
                             <option value="final">Final</option>
                         </select>
                     </div>
                     
-                    <div class="form-group">
+                    <div class="form-group" id="groupSelectionContainer">
                         <label>Group (if applicable)</label>
                         <select id="matchGroup" class="form-control">
                             <option value="A">Group A</option>
@@ -1203,13 +1283,17 @@
                         </select>
                     </div>
                     
-                    <div class="form-group">
-                        <label>Team 1 Goals</label>
-                        <input type="number" id="matchScore1" class="form-control" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Team 2 Goals</label>
-                        <input type="number" id="matchScore2" class="form-control" value="0">
+                    <div class="form-group" id="scoreInputContainer">
+                        <div style="display: flex; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <label>Team 1 Goals</label>
+                                <input type="number" id="matchScore1" class="form-control" value="0" min="0">
+                            </div>
+                            <div style="flex: 1;">
+                                <label>Team 2 Goals</label>
+                                <input type="number" id="matchScore2" class="form-control" value="0" min="0">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -1223,6 +1307,8 @@
                     </div>
                     
                     <button class="btn" id="addMatchBtn">Schedule Match</button>
+                    <button class="btn btn-success" id="saveMatchBtn" style="display: none;">Save Changes</button>
+                    <button class="btn btn-danger" id="cancelEditBtn" style="display: none;">Cancel</button>
                     
                     <div style="margin-top: 2rem;">
                         <h4>Scheduled Matches</h4>
@@ -1246,8 +1332,54 @@
                 <!-- Knockout Stage Management -->
                 <div class="admin-content" id="knockoutContent">
                     <h3>Knockout Stage Setup</h3>
+                    <p>Quarterfinal teams will be automatically selected from group stage top teams (3+ points)</p>
+                    
                     <div class="form-group">
-                        <label>Semifinal 1</label>
+                        <label>Quarterfinal 1 (Group A top teams)</label>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 1rem;">
+                            <select id="qf1Team1" class="form-control">
+                                <!-- Teams will be dynamically added -->
+                            </select>
+                            <span>vs</span>
+                            <select id="qf1Team2" class="form-control">
+                                <!-- Teams will be dynamically added -->
+                            </select>
+                            <span>vs</span>
+                            <select id="qf1Team3" class="form-control">
+                                <!-- Teams will be dynamically added -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Quarterfinal 2 (Group B top teams)</label>
+                        <div class="form-group" style="display: flex; align-items: center; gap: 1rem;">
+                            <select id="qf2Team1" class="form-control">
+                                <!-- Teams will be dynamically added -->
+                            </select>
+                            <span>vs</span>
+                            <select id="qf2Team2" class="form-control">
+                                <!-- Teams will be dynamically added -->
+                            </select>
+                            <span>vs</span>
+                            <select id="qf2Team3" class="form-control">
+                                <!-- Teams will be dynamically added -->
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Quarterfinal 1 Date & Time</label>
+                        <input type="datetime-local" id="qf1DateTime" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Quarterfinal 2 Date & Time</label>
+                        <input type="datetime-local" id="qf2DateTime" class="form-control">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>Semifinal 1 (Winners from QF1)</label>
                         <div class="form-group" style="display: flex; align-items: center; gap: 1rem;">
                             <select id="sf1Team1" class="form-control">
                                 <!-- Teams will be dynamically added -->
@@ -1260,7 +1392,7 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Semifinal 2</label>
+                        <label>Semifinal 2 (Winners from QF2)</label>
                         <div class="form-group" style="display: flex; align-items: center; gap: 1rem;">
                             <select id="sf2Team1" class="form-control">
                                 <!-- Teams will be dynamically added -->
@@ -1287,7 +1419,8 @@
                         <input type="text" id="knockoutVenue" class="form-control" placeholder="Enter venue name">
                     </div>
                     
-                    <button class="btn" id="setSemifinalsBtn">Set Semifinal Matches</button>
+                    <button class="btn" id="autoFillKnockoutBtn">Auto Fill from Groups</button>
+                    <button class="btn" id="setKnockoutBtn">Set Knockout Matches</button>
                 </div>
                 
                 <!-- Final Match Management -->
@@ -1308,12 +1441,16 @@
                     </div>
                     
                     <div class="form-group">
-                        <label>Team 1 Goals</label>
-                        <input type="number" id="finalScore1" class="form-control" value="0">
-                    </div>
-                    <div class="form-group">
-                        <label>Team 2 Goals</label>
-                        <input type="number" id="finalScore2" class="form-control" value="0">
+                        <div style="display: flex; gap: 1rem;">
+                            <div style="flex: 1;">
+                                <label>Team 1 Goals</label>
+                                <input type="number" id="finalScore1" class="form-control" value="0" min="0">
+                            </div>
+                            <div style="flex: 1;">
+                                <label>Team 2 Goals</label>
+                                <input type="number" id="finalScore2" class="form-control" value="0" min="0">
+                            </div>
+                        </div>
                     </div>
 
                     <div class="form-group">
@@ -1391,11 +1528,14 @@
             teams: [],
             matches: [],
             knockout: {
+                quarterfinal1: null,
+                quarterfinal2: null,
                 semifinal1: null,
                 semifinal2: null,
                 final: null
             },
-            champion: null
+            champion: null,
+            currentEditingMatch: null
         };
 
         // Initialize data from Firebase or localStorage
@@ -1423,16 +1563,16 @@
         function loadInitialData() {
             tournamentData = {
                 teams: [
-                    { id: "1", name: "vidwath", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "2", name: "Munees", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "3", name: "shamal", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "4", name: "zaad", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "5", name: "Rithin", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "6", name: "shamil", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "7", name: "Adhil", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "8", name: "Fudhail", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "9", name: "Abin", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 },
-                    { id: "10", name: "Dinshad", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0 }
+                    { id: "1", name: "vidwath", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "2", name: "Munees", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "3", name: "shamal", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "4", name: "zaad", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "5", name: "Rithin", group: "A", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "6", name: "shamil", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "7", name: "Adhil", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "8", name: "Fudhail", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "9", name: "Abin", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 },
+                    { id: "10", name: "Dinshad", group: "B", points: 0, wins: 0, draws: 0, losses: 0, goalsFor: 0, goalsAgainst: 0, goalDifference: 0 }
                 ],
                 matches: [
                     // Add some initial matches between these teams
@@ -1462,11 +1602,14 @@
                     }
                 ],
                 knockout: {
+                    quarterfinal1: null,
+                    quarterfinal2: null,
                     semifinal1: null,
                     semifinal2: null,
                     final: null
                 },
-                champion: null
+                champion: null,
+                currentEditingMatch: null
             };
             saveData();
         }
@@ -1569,7 +1712,22 @@
             const matchesList = document.getElementById('matchesList');
             matchesList.innerHTML = '';
             
-            tournamentData.matches.forEach(match => {
+            // Filter matches based on active filter
+            const activeFilter = document.querySelector('.filter-btn.active').getAttribute('data-filter');
+            let filteredMatches = tournamentData.matches;
+            
+            if (activeFilter === 'upcoming') {
+                const now = new Date();
+                filteredMatches = tournamentData.matches.filter(match => 
+                    new Date(match.date) > now && !match.completed
+                );
+            } else if (activeFilter === 'completed') {
+                filteredMatches = tournamentData.matches.filter(match => 
+                    match.completed || (match.score1 !== null && match.score2 !== null)
+                );
+            }
+            
+            filteredMatches.forEach(match => {
                 const team1 = tournamentData.teams.find(t => t.id === match.team1Id);
                 const team2 = tournamentData.teams.find(t => t.id === match.team2Id);
                 
@@ -1616,6 +1774,8 @@
             const match = tournamentData.matches.find(m => m.id === matchId);
             if (!match) return;
             
+            tournamentData.currentEditingMatch = matchId;
+            
             // Set form values
             document.getElementById('matchStage').value = match.stage;
             document.getElementById('matchGroup').value = match.group || 'A';
@@ -1626,15 +1786,113 @@
             document.getElementById('matchDateTime').value = match.date;
             document.getElementById('matchVenue').value = match.venue || '';
             
-            // Update button to say "Update Match" instead of "Schedule Match"
-            const addMatchBtn = document.getElementById('addMatchBtn');
-            addMatchBtn.textContent = 'Update Match';
-            addMatchBtn.setAttribute('data-edit-id', matchId);
+            // Show/hide group selection based on stage
+            toggleGroupSelection(match.stage);
+            
+            // Hide add button and show save/cancel buttons
+            document.getElementById('addMatchBtn').style.display = 'none';
+            document.getElementById('saveMatchBtn').style.display = 'inline-block';
+            document.getElementById('cancelEditBtn').style.display = 'inline-block';
             
             // Scroll to form
             document.getElementById('matchesContent').scrollIntoView({ behavior: 'smooth' });
             
-            showNotification('Editing match. Update the details and click "Update Match"');
+            showNotification('Editing match. Update the details and click "Save Changes"');
+        }
+
+        // Cancel edit function
+        function cancelEdit() {
+            tournamentData.currentEditingMatch = null;
+            
+            // Reset form
+            document.getElementById('matchStage').value = 'group';
+            document.getElementById('matchGroup').value = 'A';
+            document.getElementById('team1').value = '';
+            document.getElementById('team2').value = '';
+            document.getElementById('matchScore1').value = '0';
+            document.getElementById('matchScore2').value = '0';
+            document.getElementById('matchDateTime').value = '';
+            document.getElementById('matchVenue').value = '';
+            
+            // Show add button and hide save/cancel buttons
+            document.getElementById('addMatchBtn').style.display = 'inline-block';
+            document.getElementById('saveMatchBtn').style.display = 'none';
+            document.getElementById('cancelEditBtn').style.display = 'none';
+            
+            showNotification('Edit cancelled');
+        }
+
+        // Save edited match
+        function saveEditedMatch() {
+            const matchId = tournamentData.currentEditingMatch;
+            if (!matchId) return;
+            
+            const matchIndex = tournamentData.matches.findIndex(m => m.id === matchId);
+            if (matchIndex === -1) return;
+            
+            const stageInput = document.getElementById('matchStage');
+            const groupInput = document.getElementById('matchGroup');
+            const team1Input = document.getElementById('team1');
+            const team2Input = document.getElementById('team2');
+            const score1Input = document.getElementById('matchScore1');
+            const score2Input = document.getElementById('matchScore2');
+            const dateInput = document.getElementById('matchDateTime');
+            const venueInput = document.getElementById('matchVenue');
+            
+            const stage = stageInput.value;
+            const group = groupInput.value;
+            const team1Id = team1Input.value;
+            const team2Id = team2Input.value;
+            const score1 = parseInt(score1Input.value);
+            const score2 = parseInt(score2Input.value);
+            const date = dateInput.value;
+            const venue = venueInput.value.trim();
+            
+            if (!team1Id || !team2Id) {
+                showNotification('Please select both teams', true);
+                return;
+            }
+            
+            if (team1Id === team2Id) {
+                showNotification('A team cannot play against itself', true);
+                return;
+            }
+            
+            if (!date) {
+                showNotification('Please select a date and time', true);
+                return;
+            }
+            
+            // Update match
+            tournamentData.matches[matchIndex] = {
+                ...tournamentData.matches[matchIndex],
+                stage: stage,
+                group: group,
+                team1Id: team1Id,
+                team2Id: team2Id,
+                score1: isNaN(score1) ? null : score1,
+                score2: isNaN(score2) ? null : score2,
+                date: date,
+                venue: venue || 'Virtual Stadium',
+                completed: !isNaN(score1) && !isNaN(score2)
+            };
+            
+            // Reset form and editing state
+            tournamentData.currentEditingMatch = null;
+            cancelEdit();
+            
+            saveData();
+            showNotification('Match updated successfully!');
+        }
+
+        // Toggle group selection visibility based on stage
+        function toggleGroupSelection(stage) {
+            const groupContainer = document.getElementById('groupSelectionContainer');
+            if (stage === 'group' || stage === 'group2') {
+                groupContainer.style.display = 'block';
+            } else {
+                groupContainer.style.display = 'none';
+            }
         }
 
         // Render groups on groups page
@@ -1658,6 +1916,7 @@
                             <div>W</div>
                             <div>D</div>
                             <div>L</div>
+                            <div>G</div>
                             <div>Pts</div>
                         </div>
                         <div id="group-${group}-teams"></div>
@@ -1668,7 +1927,14 @@
                 const groupTeamsContainer = document.getElementById(`group-${group}-teams`);
                 const groupTeams = tournamentData.teams
                     .filter(team => team.group === group)
-                    .sort((a, b) => b.points - a.points || (b.goalsFor - b.goalsAgainst) - (a.goalsFor - a.goalsAgainst));
+                    .sort((a, b) => {
+                        // First by points
+                        if (b.points !== a.points) return b.points - a.points;
+                        // Then by goal difference
+                        if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                        // Then by goals scored
+                        return b.goalsFor - a.goalsFor;
+                    });
                 
                 groupTeams.forEach((team, index) => {
                     const teamRow = document.createElement('div');
@@ -1682,6 +1948,7 @@
                         <div>${team.wins}</div>
                         <div>${team.draws}</div>
                         <div>${team.losses}</div>
+                        <div>${team.goalsFor}:${team.goalsAgainst}</div>
                         <div>${team.points}</div>
                     `;
                     groupTeamsContainer.appendChild(teamRow);
@@ -1704,6 +1971,7 @@
                 team.points = 0;
                 team.goalsFor = 0;
                 team.goalsAgainst = 0;
+                team.goalDifference = 0;
             });
             
             // Process all completed matches
@@ -1723,7 +1991,11 @@
                         team2.goalsFor += match.score2;
                         team2.goalsAgainst += match.score1;
                         
-                        // Update points based on match result
+                        // Calculate goal difference
+                        team1.goalDifference = team1.goalsFor - team1.goalsAgainst;
+                        team2.goalDifference = team2.goalsFor - team2.goalsAgainst;
+                        
+                        // Update points based on match result - 1 point for win, 1 point for draw
                         if (match.score1 > match.score2) {
                             team1.wins++;
                             team1.points += 1;
@@ -1752,6 +2024,24 @@
             bracket.className = 'bracket';
             bracket.innerHTML = `
                 <div class="bracket-column">
+                    <div class="bracket-match" id="quarterfinal1">
+                        <div class="bracket-match-header">Quarterfinal 1 (Group A)</div>
+                        <div class="bracket-team" id="qf1-team1">TBD</div>
+                        <div class="bracket-team" id="qf1-team2">TBD</div>
+                        <div class="bracket-team" id="qf1-team3">TBD</div>
+                        <div class="match-date" id="qf1-date"></div>
+                    </div>
+                    
+                    <div class="bracket-match" id="quarterfinal2">
+                        <div class="bracket-match-header">Quarterfinal 2 (Group B)</div>
+                        <div class="bracket-team" id="qf2-team1">TBD</div>
+                        <div class="bracket-team" id="qf2-team2">TBD</div>
+                        <div class="bracket-team" id="qf2-team3">TBD</div>
+                        <div class="match-date" id="qf2-date"></div>
+                    </div>
+                </div>
+                
+                <div class="bracket-column">
                     <div class="bracket-match semifinal" id="semifinal1">
                         <div class="bracket-match-header">Semifinal 1</div>
                         <div class="bracket-team" id="sf1-team1">TBD</div>
@@ -1779,18 +2069,44 @@
             knockoutStage.appendChild(bracket);
             
             // Update with actual data if available
+            if (tournamentData.knockout.quarterfinal1) {
+                const qf1 = tournamentData.knockout.quarterfinal1;
+                const team1 = tournamentData.teams.find(t => t.id === qf1.team1Id);
+                const team2 = tournamentData.teams.find(t => t.id === qf1.team2Id);
+                const team3 = tournamentData.teams.find(t => t.id === qf1.team3Id);
+                
+                if (team1) document.getElementById('qf1-team1').textContent = team1.name;
+                if (team2) document.getElementById('qf1-team2').textContent = team2.name;
+                if (team3) document.getElementById('qf1-team3').textContent = team3.name;
+                
+                const date = new Date(qf1.date);
+                document.getElementById('qf1-date').textContent = date.toLocaleString();
+            }
+            
+            if (tournamentData.knockout.quarterfinal2) {
+                const qf2 = tournamentData.knockout.quarterfinal2;
+                const team1 = tournamentData.teams.find(t => t.id === qf2.team1Id);
+                const team2 = tournamentData.teams.find(t => t.id === qf2.team2Id);
+                const team3 = tournamentData.teams.find(t => t.id === qf2.team3Id);
+                
+                if (team1) document.getElementById('qf2-team1').textContent = team1.name;
+                if (team2) document.getElementById('qf2-team2').textContent = team2.name;
+                if (team3) document.getElementById('qf2-team3').textContent = team3.name;
+                
+                const date = new Date(qf2.date);
+                document.getElementById('qf2-date').textContent = date.toLocaleString();
+            }
+            
             if (tournamentData.knockout.semifinal1) {
                 const sf1 = tournamentData.knockout.semifinal1;
                 const team1 = tournamentData.teams.find(t => t.id === sf1.team1Id);
                 const team2 = tournamentData.teams.find(t => t.id === sf1.team2Id);
                 
-                if (team1 && team2) {
-                    document.getElementById('sf1-team1').textContent = team1.name;
-                    document.getElementById('sf1-team2').textContent = team2.name;
-                    
-                    const date = new Date(sf1.date);
-                    document.getElementById('sf1-date').textContent = date.toLocaleString();
-                }
+                if (team1) document.getElementById('sf1-team1').textContent = team1.name;
+                if (team2) document.getElementById('sf1-team2').textContent = team2.name;
+                
+                const date = new Date(sf1.date);
+                document.getElementById('sf1-date').textContent = date.toLocaleString();
             }
             
             if (tournamentData.knockout.semifinal2) {
@@ -1798,13 +2114,11 @@
                 const team1 = tournamentData.teams.find(t => t.id === sf2.team1Id);
                 const team2 = tournamentData.teams.find(t => t.id === sf2.team2Id);
                 
-                if (team1 && team2) {
-                    document.getElementById('sf2-team1').textContent = team1.name;
-                    document.getElementById('sf2-team2').textContent = team2.name;
-                    
-                    const date = new Date(sf2.date);
-                    document.getElementById('sf2-date').textContent = date.toLocaleString();
-                }
+                if (team1) document.getElementById('sf2-team1').textContent = team1.name;
+                if (team2) document.getElementById('sf2-team2').textContent = team2.name;
+                
+                const date = new Date(sf2.date);
+                document.getElementById('sf2-date').textContent = date.toLocaleString();
             }
             
             if (tournamentData.knockout.final) {
@@ -1812,13 +2126,11 @@
                 const team1 = tournamentData.teams.find(t => t.id === final.team1Id);
                 const team2 = tournamentData.teams.find(t => t.id === final.team2Id);
                 
-                if (team1 && team2) {
-                    document.getElementById('final-team1').textContent = team1.name;
-                    document.getElementById('final-team2').textContent = team2.name;
-                    
-                    const date = new Date(final.date);
-                    document.getElementById('final-date').textContent = date.toLocaleString();
-                }
+                if (team1) document.getElementById('final-team1').textContent = team1.name;
+                if (team2) document.getElementById('final-team2').textContent = team2.name;
+                
+                const date = new Date(final.date);
+                document.getElementById('final-date').textContent = date.toLocaleString();
             }
         }
 
@@ -1826,7 +2138,7 @@
         function renderChampion() {
             const championSection = document.getElementById('championSection');
             
-            if (tournamentData.champion) {
+            if (tournamentData.champion && tournamentData.champion.published) {
                 championSection.style.display = 'block';
                 const champion = tournamentData.teams.find(t => t.id === tournamentData.champion.teamId);
                 
@@ -1847,6 +2159,8 @@
             // First render all team dropdowns
             const teamDropdowns = [
                 'team1', 'team2', 
+                'qf1Team1', 'qf1Team2', 'qf1Team3',
+                'qf2Team1', 'qf2Team2', 'qf2Team3',
                 'sf1Team1', 'sf1Team2', 
                 'sf2Team1', 'sf2Team2', 
                 'finalTeam1', 'finalTeam2',
@@ -1876,6 +2190,47 @@
             
             // Special handling for match group teams
             updateTeamDropdownsByGroup();
+            
+            // If we have knockout data, pre-fill the dropdowns
+            if (tournamentData.knockout.quarterfinal1) {
+                document.getElementById('qf1Team1').value = tournamentData.knockout.quarterfinal1.team1Id || '';
+                document.getElementById('qf1Team2').value = tournamentData.knockout.quarterfinal1.team2Id || '';
+                document.getElementById('qf1Team3').value = tournamentData.knockout.quarterfinal1.team3Id || '';
+                document.getElementById('qf1DateTime').value = tournamentData.knockout.quarterfinal1.date || '';
+            }
+            
+            if (tournamentData.knockout.quarterfinal2) {
+                document.getElementById('qf2Team1').value = tournamentData.knockout.quarterfinal2.team1Id || '';
+                document.getElementById('qf2Team2').value = tournamentData.knockout.quarterfinal2.team2Id || '';
+                document.getElementById('qf2Team3').value = tournamentData.knockout.quarterfinal2.team3Id || '';
+                document.getElementById('qf2DateTime').value = tournamentData.knockout.quarterfinal2.date || '';
+            }
+            
+            if (tournamentData.knockout.semifinal1) {
+                document.getElementById('sf1Team1').value = tournamentData.knockout.semifinal1.team1Id || '';
+                document.getElementById('sf1Team2').value = tournamentData.knockout.semifinal1.team2Id || '';
+                document.getElementById('sf1DateTime').value = tournamentData.knockout.semifinal1.date || '';
+            }
+            
+            if (tournamentData.knockout.semifinal2) {
+                document.getElementById('sf2Team1').value = tournamentData.knockout.semifinal2.team1Id || '';
+                document.getElementById('sf2Team2').value = tournamentData.knockout.semifinal2.team2Id || '';
+                document.getElementById('sf2DateTime').value = tournamentData.knockout.semifinal2.date || '';
+            }
+            
+            if (tournamentData.knockout.final) {
+                document.getElementById('finalTeam1').value = tournamentData.knockout.final.team1Id || '';
+                document.getElementById('finalTeam2').value = tournamentData.knockout.final.team2Id || '';
+                document.getElementById('finalScore1').value = tournamentData.knockout.final.score1 || '0';
+                document.getElementById('finalScore2').value = tournamentData.knockout.final.score2 || '0';
+                document.getElementById('finalDateTime').value = tournamentData.knockout.final.date || '';
+                document.getElementById('finalVenue').value = tournamentData.knockout.final.venue || '';
+            }
+            
+            if (tournamentData.champion) {
+                document.getElementById('championTeamSelect').value = tournamentData.champion.teamId || '';
+                document.getElementById('publishResult').checked = tournamentData.champion.published || false;
+            }
         }
 
         // Update team dropdowns based on selected group
@@ -1925,6 +2280,34 @@
             }
         }
 
+        // Auto-fill knockout teams from group standings
+        function autoFillKnockoutTeams() {
+            // Calculate standings first
+            calculateStandings();
+            
+            // Get top teams from each group with 3+ points
+            const groupATeams = tournamentData.teams
+                .filter(team => team.group === 'A' && team.points >= 3)
+                .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor)
+                .slice(0, 3);
+            
+            const groupBTeams = tournamentData.teams
+                .filter(team => team.group === 'B' && team.points >= 3)
+                .sort((a, b) => b.points - a.points || b.goalDifference - a.goalDifference || b.goalsFor - a.goalsFor)
+                .slice(0, 3);
+            
+            // Fill quarterfinal teams
+            if (groupATeams.length >= 1) document.getElementById('qf1Team1').value = groupATeams[0].id;
+            if (groupATeams.length >= 2) document.getElementById('qf1Team2').value = groupATeams[1].id;
+            if (groupATeams.length >= 3) document.getElementById('qf1Team3').value = groupATeams[2].id;
+            
+            if (groupBTeams.length >= 1) document.getElementById('qf2Team1').value = groupBTeams[0].id;
+            if (groupBTeams.length >= 2) document.getElementById('qf2Team2').value = groupBTeams[1].id;
+            if (groupBTeams.length >= 3) document.getElementById('qf2Team3').value = groupBTeams[2].id;
+            
+            showNotification('Knockout teams auto-filled from group standings');
+        }
+
         // Add a new team
         function addTeam() {
             const nameInput = document.getElementById('teamName');
@@ -1947,7 +2330,8 @@
                 draws: 0,
                 losses: 0,
                 goalsFor: 0,
-                goalsAgainst: 0
+                goalsAgainst: 0,
+                goalDifference: 0
             };
             
             tournamentData.teams.push(newTeam);
@@ -1982,7 +2366,6 @@
             const score2Input = document.getElementById('matchScore2');
             const dateInput = document.getElementById('matchDateTime');
             const venueInput = document.getElementById('matchVenue');
-            const addMatchBtn = document.getElementById('addMatchBtn');
             
             const stage = stageInput.value;
             const group = groupInput.value;
@@ -1992,7 +2375,6 @@
             const score2 = parseInt(score2Input.value);
             const date = dateInput.value;
             const venue = venueInput.value.trim();
-            const isEditing = addMatchBtn.getAttribute('data-edit-id');
             
             if (!team1Id || !team2Id) {
                 showNotification('Please select both teams', true);
@@ -2009,44 +2391,21 @@
                 return;
             }
             
-            if (isEditing) {
-                // Update existing match
-                const matchIndex = tournamentData.matches.findIndex(m => m.id === isEditing);
-                if (matchIndex !== -1) {
-                    tournamentData.matches[matchIndex] = {
-                        ...tournamentData.matches[matchIndex],
-                        stage: stage,
-                        group: group,
-                        team1Id: team1Id,
-                        team2Id: team2Id,
-                        score1: isNaN(score1) ? null : score1,
-                        score2: isNaN(score2) ? null : score2,
-                        date: date,
-                        venue: venue || 'Virtual Stadium',
-                        completed: !isNaN(score1) && !isNaN(score2)
-                    };
-                    
-                    // Reset button to "Schedule Match"
-                    addMatchBtn.textContent = 'Schedule Match';
-                    addMatchBtn.removeAttribute('data-edit-id');
-                }
-            } else {
-                // Add new match
-                const newMatch = {
-                    id: Date.now().toString(),
-                    stage: stage,
-                    group: group,
-                    team1Id: team1Id,
-                    team2Id: team2Id,
-                    score1: isNaN(score1) ? null : score1,
-                    score2: isNaN(score2) ? null : score2,
-                    date: date,
-                    venue: venue || 'Virtual Stadium',
-                    completed: !isNaN(score1) && !isNaN(score2)
-                };
-                
-                tournamentData.matches.push(newMatch);
-            }
+            // Add new match
+            const newMatch = {
+                id: Date.now().toString(),
+                stage: stage,
+                group: group,
+                team1Id: team1Id,
+                team2Id: team2Id,
+                score1: isNaN(score1) ? null : score1,
+                score2: isNaN(score2) ? null : score2,
+                date: date,
+                venue: venue || 'Virtual Stadium',
+                completed: !isNaN(score1) && !isNaN(score2)
+            };
+            
+            tournamentData.matches.push(newMatch);
             
             saveData();
             
@@ -2060,7 +2419,7 @@
             dateInput.value = '';
             venueInput.value = '';
             
-            showNotification(isEditing ? 'Match updated successfully!' : 'Match scheduled successfully!');
+            showNotification('Match scheduled successfully!');
         }
 
         // Delete a match
@@ -2070,36 +2429,80 @@
             showNotification('Match deleted successfully!');
         }
 
-        // Set semifinal matches
-        function setSemifinals() {
+        // Set knockout matches
+        function setKnockoutMatches() {
+            const qf1Team1Input = document.getElementById('qf1Team1');
+            const qf1Team2Input = document.getElementById('qf1Team2');
+            const qf1Team3Input = document.getElementById('qf1Team3');
+            const qf2Team1Input = document.getElementById('qf2Team1');
+            const qf2Team2Input = document.getElementById('qf2Team2');
+            const qf2Team3Input = document.getElementById('qf2Team3');
             const sf1Team1Input = document.getElementById('sf1Team1');
             const sf1Team2Input = document.getElementById('sf1Team2');
             const sf2Team1Input = document.getElementById('sf2Team1');
             const sf2Team2Input = document.getElementById('sf2Team2');
+            const qf1DateInput = document.getElementById('qf1DateTime');
+            const qf2DateInput = document.getElementById('qf2DateTime');
             const sf1DateInput = document.getElementById('sf1DateTime');
             const sf2DateInput = document.getElementById('sf2DateTime');
             const venueInput = document.getElementById('knockoutVenue');
             
+            const qf1Team1Id = qf1Team1Input.value;
+            const qf1Team2Id = qf1Team2Input.value;
+            const qf1Team3Id = qf1Team3Input.value;
+            const qf2Team1Id = qf2Team1Input.value;
+            const qf2Team2Id = qf2Team2Input.value;
+            const qf2Team3Id = qf2Team3Input.value;
             const sf1Team1Id = sf1Team1Input.value;
             const sf1Team2Id = sf1Team2Input.value;
             const sf2Team1Id = sf2Team1Input.value;
             const sf2Team2Id = sf2Team2Input.value;
+            const qf1Date = qf1DateInput.value;
+            const qf2Date = qf2DateInput.value;
             const sf1Date = sf1DateInput.value;
             const sf2Date = sf2DateInput.value;
             const venue = venueInput.value.trim();
             
             // Validation
-            if (!sf1Team1Id || !sf1Team2Id || !sf2Team1Id || !sf2Team2Id) {
-                showNotification('Please select all teams for both semifinals', true);
+            if (!qf1Team1Id || !qf1Team2Id || !qf1Team3Id || !qf2Team1Id || !qf2Team2Id || !qf2Team3Id) {
+                showNotification('Please select all teams for all knockout matches', true);
                 return;
             }
             
-            if (!sf1Date || !sf2Date) {
-                showNotification('Please select dates for both semifinals', true);
+            if (!qf1Date || !qf2Date || !sf1Date || !sf2Date) {
+                showNotification('Please select dates for all knockout matches', true);
                 return;
             }
             
-            // Create semifinal matches
+            // Create knockout matches
+            const quarterfinal1 = {
+                id: `qf1-${Date.now()}`,
+                stage: 'quarterfinal',
+                team1Id: qf1Team1Id,
+                team2Id: qf1Team2Id,
+                team3Id: qf1Team3Id,
+                date: qf1Date,
+                venue: venue || 'Virtual Stadium',
+                score1: null,
+                score2: null,
+                score3: null,
+                completed: false
+            };
+            
+            const quarterfinal2 = {
+                id: `qf2-${Date.now()}`,
+                stage: 'quarterfinal',
+                team1Id: qf2Team1Id,
+                team2Id: qf2Team2Id,
+                team3Id: qf2Team3Id,
+                date: qf2Date,
+                venue: venue || 'Virtual Stadium',
+                score1: null,
+                score2: null,
+                score3: null,
+                completed: false
+            };
+            
             const semifinal1 = {
                 id: `sf1-${Date.now()}`,
                 stage: 'semifinal',
@@ -2125,14 +2528,16 @@
             };
             
             // Add to tournament data
+            tournamentData.knockout.quarterfinal1 = quarterfinal1;
+            tournamentData.knockout.quarterfinal2 = quarterfinal2;
             tournamentData.knockout.semifinal1 = semifinal1;
             tournamentData.knockout.semifinal2 = semifinal2;
             
             // Also add to matches array
-            tournamentData.matches.push(semifinal1, semifinal2);
+            tournamentData.matches.push(quarterfinal1, quarterfinal2, semifinal1, semifinal2);
             
             saveData();
-            showNotification('Semifinal matches set successfully!');
+            showNotification('Knockout matches set successfully!');
         }
 
         // Set final match result
@@ -2287,8 +2692,10 @@
                     matchCard.className = 'match-card';
                     
                     let scoreHTML = '';
-                    if (match.score1 !== null && match.score2 !== null) {
-                        scoreHTML = `<div class="match-score">${match.score1} - ${match.score2}</div>`;
+                    if (match.completed || (match.score1 !== null && match.score2 !== null)) {
+                        scoreHTML = `<div class="match-score">${match.score1 !== null ? match.score1 : '0'} - ${match.score2 !== null ? match.score2 : '0'}</div>`;
+                    } else {
+                        scoreHTML = `<div class="match-score">- -</div>`;
                     }
                     
                     matchCard.innerHTML = `
@@ -2454,14 +2861,37 @@
                 });
             });
             
+            // Match stage change handler
+            document.getElementById('matchStage').addEventListener('change', function() {
+                toggleGroupSelection(this.value);
+            });
+            
+            // Match filters
+            document.querySelectorAll('.filter-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    renderMatches();
+                });
+            });
+            
             // Add team button
             document.getElementById('addTeamBtn').addEventListener('click', addTeam);
             
             // Add match button
             document.getElementById('addMatchBtn').addEventListener('click', addMatch);
             
-            // Set semifinals button
-            document.getElementById('setSemifinalsBtn').addEventListener('click', setSemifinals);
+            // Save match button
+            document.getElementById('saveMatchBtn').addEventListener('click', saveEditedMatch);
+            
+            // Cancel edit button
+            document.getElementById('cancelEditBtn').addEventListener('click', cancelEdit);
+            
+            // Auto fill knockout teams button
+            document.getElementById('autoFillKnockoutBtn').addEventListener('click', autoFillKnockoutTeams);
+            
+            // Set knockout matches button
+            document.getElementById('setKnockoutBtn').addEventListener('click', setKnockoutMatches);
             
             // Set final result button
             document.getElementById('setFinalResultBtn').addEventListener('click', setFinalResult);
