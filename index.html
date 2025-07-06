@@ -1364,10 +1364,10 @@
             authDomain: "efootballtournamen2025.firebaseapp.com",
             databaseURL: "https://efootballtournamen2025-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "efootballtournamen2025",
-            storageBucket: "efootballtournamen2025.firebasestorage.app",
+            storageBucket: "efootballtournamen2025.appspot.com",
             messagingSenderId: "541951066726",
-            appId: "1:541951066726:web:31e2af5770e35406fb23a7",
-            measurementId: "G-P2GBJSMLQH"
+            appId: "1:541951066726:web:e0f587ac2dd0a8c4fb23a7",
+            measurementId: "G-PC1VZVDDRE"
         };
 
         // Initialize Firebase
@@ -1408,8 +1408,7 @@
                 }
             });
         }
-
-        // Load initial data for first-time users
+        
         function loadInitialData() {
             tournamentData = {
                 teams: [
@@ -1425,14 +1424,15 @@
                     { id: "10", name: "Dinshad", group: "B" }
                 ],
                 matches: [
+                    // Add some initial matches between these teams
                     {
                         id: "m1",
                         stage: "group",
                         group: "A",
-                        team1Id: "1",
-                        team2Id: "2",
+                        team1Id: "1", // vidwath
+                        team2Id: "2", // Munees
                         date: new Date(Date.now() + 2 * 24 * 60 * 60 * 1000).toISOString(),
-                        venue: "pess",
+                        venue: "Virtual Stadium 1",
                         score1: null,
                         score2: null
                     },
@@ -1440,10 +1440,10 @@
                         id: "m2",
                         stage: "group",
                         group: "B",
-                        team1Id: "3",
-                        team2Id: "4",
+                        team1Id: "6", // shamil
+                        team2Id: "7", // Adhil
                         date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString(),
-                        venue: "pess",
+                        venue: "Virtual Stadium 2",
                         score1: null,
                         score2: null
                     }
